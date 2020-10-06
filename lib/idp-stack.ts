@@ -1,4 +1,8 @@
-import { OAuthScope, UserPool } from "@aws-cdk/aws-cognito";
+import {
+  CfnUserPoolResourceServer,
+  OAuthScope,
+  UserPool,
+} from "@aws-cdk/aws-cognito";
 import * as cdk from "@aws-cdk/core";
 
 export class IdpStack extends cdk.Stack {
@@ -8,27 +12,20 @@ export class IdpStack extends cdk.Stack {
     const pool = new UserPool(this, "dev-userpool", {
       userPoolName: "dev-userpool",
     });
-   
-    const resourceServer = new cdk.CfnResource(
-      this,
-      "dev-userpool-resource-server",
-      {
-        type: "AWS::Cognito::UserPoolResourceServer",
-        properties: {
-          Identifier: "https://resource-server/",
-          Name: "dev-userpool-resource-server",
-          Scopes: [
-            {
-              ScopeDescription: "Get todo items",
-              ScopeName: "get-todos",
-            },
-          ],
-          UserPoolId: pool.userPoolId,
+
+    new CfnUserPoolResourceServer(this, "dev-userpool-resource-server", {
+      identifier: "https://resource-server/",
+      name: "dev-userpool-resource-server",
+      userPoolId: pool.userPoolId,
+      scopes: [
+        {
+          scopeDescription: "Get todo items",
+          scopeName: "get-todos",
         },
-      }
-    );
-    
-    const client = pool.addClient("console-client", {
+      ],
+    });
+
+    pool.addClient("console-client", {
       generateSecret: true,
       oAuth: {
         flows: {
@@ -38,12 +35,10 @@ export class IdpStack extends cdk.Stack {
       },
     });
 
-    client.node.addDependency(resourceServer)
-
     pool.addDomain("dev-userpool-domain", {
       cognitoDomain: {
-        domainPrefix: 'dev-userpool',
+        domainPrefix: "dev-userpool",
       },
-    })
+    });
   }
 }
